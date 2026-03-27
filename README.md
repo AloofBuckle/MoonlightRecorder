@@ -49,20 +49,6 @@ In practical terms, the current fork:
 - exposes recorder-centric settings in the GUI
 - builds Windows installer and portable packages under the `MoonlightRecorder` product name
 
-## Windows Build Notes
-
-The current tested toolchain is:
-
-- Qt `6.8.3` (`MSVC 2022 64-bit`)
-- Visual Studio 2022 Build Tools
-- Windows 10/11 SDK
-
-Build scripts are configured so that build artifacts go to:
-
-- `C:\Users\Administrator\Desktop\MoonlightRecorder-build`
-
-instead of polluting the repository root with build outputs.
-
 ### Windows Build Requirements
 
 - Qt 6.7 SDK or later
