@@ -1,0 +1,122 @@
+<?define ShortName = "MoonlightRecorder" ?>
+<?define FullName = "MoonlightRecorder" ?>
+<?define Manufacturer = "MoonlightRecorder Project" ?>
+<?define ExeName = "MoonlightRecorder.exe" ?>
+<?define RegistryKeyRoot = "Software\MoonlightRecorder Project" ?>
+<?define AppDataFolder = "%LOCALAPPDATA%\MoonlightRecorder Project" ?>
+<?define ShortcutName = "$(var.ShortName)" ?>
+<?define ShortcutDesc = "Capture Sunshine streams without local playback" ?>
+<?define InstallFolder = "MoonlightRecorder" ?>
+
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:fire="http://wixtoolset.org/schemas/v4/wxs/firewall" xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <Package Name="$(var.FullName)"
+           Language="1033"
+           Version="!(bind.fileVersion.AppExe)"
+           Manufacturer="$(var.Manufacturer)"
+           UpgradeCode="3fb69eba-29e8-43a9-951e-dcfb73915741">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." Schedule="afterInstallInitialize" />
+    <MediaTemplate CompressionLevel="high" EmbedCab="yes" />
+
+    <Property Id="APPDATAFOLDER" Value="$(var.AppDataFolder)" />
+
+    <!-- There's no way to delete a registry key on uninstall but not major upgrade, so
+        we have to roll our own deletion via custom action -->
+    <CustomAction Id="DeleteRegistryKey"
+                  Directory="ProgramFiles6432Folder"
+                  ExeCommand="reg.exe delete &quot;HKCU\$(var.RegistryKeyRoot)&quot; /f"
+                  Execute="deferred"
+                  Return="ignore"
+                  Impersonate="yes" />
+    <InstallExecuteSequence>
+      <Custom Action="DeleteRegistryKey"
+              Before="InstallFinalize"
+              Condition="Installed AND REMOVE~=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+    </InstallExecuteSequence>
+
+    <Component Id="AppShortcuts" Directory="INSTALLFOLDER">
+      <Shortcut Id="StartMenuShortcut"
+                Name="$(var.ShortcutName)"
+                Description="$(var.ShortcutDesc)"
+                Target="[INSTALLFOLDER]$(var.ExeName)"
+                Directory="ApplicationProgramsFolder"
+                WorkingDirectory="INSTALLFOLDER" />
+      <RemoveFolder Id="CleanupStartMenuShortcut"
+                    Directory="ApplicationProgramsFolder"
+                    On="uninstall" />
+      <util:RemoveFolderEx Id="CleanupAppDataFolder"
+                           On="uninstall"
+                           Property="APPDATAFOLDER" />
+      <RegistryValue Root="HKCU"
+                     Key="$(var.RegistryKeyRoot)"
+                     Name="Installed"
+                     Type="integer"
+                     Value="1"
+                     KeyPath="yes" />
+    </Component>
+
+    <Component Id="AppDesktopShortcut" Directory="INSTALLFOLDER" Condition="ADDDESKTOPSHORTCUT=1">
+      <Shortcut Id="DesktopShortcut"
+                Name="$(var.ShortcutName)"
+                Description="$(var.ShortcutDesc)"
+                Target="[INSTALLFOLDER]$(var.ExeName)"
+                Directory="DesktopFolder"
+                WorkingDirectory="INSTALLFOLDER" />
+      <RemoveFolder Id="CleanupDesktopShortcut"
+                    Directory="DesktopFolder"
+                    On="uninstall" />
+      <RegistryValue Root="HKCU"
+                     Key="$(var.RegistryKeyRoot)"
+                     Name="DesktopShortcutInstalled"
+                     Type="integer"
+                     Value="1"
+                     KeyPath="yes" />
+    </Component>
+
+    <!-- Persist desktop shortcut's installed state to let Bundle.wxs know if
+         the desktop shortcut should installed by default when upgrading the
+         product -->
+    <Component Id="AppDesktopShortcutState" Directory="INSTALLFOLDER">
+      <RegistryValue Root="HKCU"
+                     Key="$(var.RegistryKeyRoot)"
+                     Name="DesktopShortcutInstallState"
+                     Type="integer"
+                     Value="[ADDDESKTOPSHORTCUT]"
+                     KeyPath="yes" />
+    </Component>
+
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="AppBinary">
+        <File Id="AppExe"
+              KeyPath="yes"
+              Checksum="yes"
+              Source="$(var.BuildDir)\app\$(var.Configuration)\$(var.ExeName)">
+          <fire:FirewallException Id="AppFirewallException"
+                                  Scope="any"
+                                  IgnoreFailure="yes"
+                                  Name="$(var.FullName)" />
+        </File>
+      </Component>
+    </DirectoryRef>
+
+    <ComponentGroup Id="AppDependencies" Directory="INSTALLFOLDER">
+      <Files Include="$(var.DeployDir)\**" />
+    </ComponentGroup>
+
+    <Feature Id="ProductFeature" Title="$(var.ShortName)" Level="1" ConfigurableDirectory="INSTALLFOLDER">
+      <ComponentRef Id="AppBinary" />
+      <ComponentRef Id="AppShortcuts" />
+      <ComponentRef Id="AppDesktopShortcutState" />
+      <ComponentRef Id="AppDesktopShortcut" />
+      <ComponentGroupRef Id="AppDependencies" />
+    </Feature>
+
+    <StandardDirectory Id="DesktopFolder" />
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="$(var.InstallFolder)" />
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="$(var.InstallFolder)" />
+    </StandardDirectory>
+  </Package>
+</Wix>
