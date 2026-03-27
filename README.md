@@ -1,100 +1,127 @@
 # MoonlightRecorder
 
-MoonlightRecorder is an experimental recorder-focused fork of [moonlight-stream/moonlight-qt](https://github.com/moonlight-stream/moonlight-qt).
+`MoonlightRecorder` 是一个面向“录制”而不是“本地播放”的实验性分支项目，基于 [moonlight-stream/moonlight-qt](https://github.com/moonlight-stream/moonlight-qt) 改造而来。
 
-Instead of decoding and playing the stream locally, this fork negotiates stream capabilities with the host, receives the reordered bitstream from Moonlight's networking pipeline, and records that stream to a local container file.
+和原版 Moonlight Qt 不同，这个分支的目标不是在本地解码并播放串流画面，而是：
 
-## Status
+- 与主机协商可用规格
+- 复用 Moonlight 自己的网络接收、纠错、重排序链路
+- 在重排序之后直接拿到源码流
+- 将音视频封装并录制到本地文件
 
-This repository is currently an `alpha` / `experimental` build.
+## 当前状态
 
-Phase 1 is focused on:
+本仓库目前属于 `alpha / experimental` 阶段。
 
-- GUI-based recording workflow
-- Source-exact bitstream capture after Moonlight reordering
-- Local recording to selectable containers
-- AV1 / HEVC / H.264 negotiation using the client-side recording profile
-- Audio capture alongside video recording
+第一阶段已经实现的核心能力：
 
-Planned later work includes live restream / push-stream output.
+- 基于 GUI 的录制工作流
+- 经过 Moonlight 重排序后的源码流录制
+- 可选本地封装容器
+- 基于客户端配置向主机协商 `AV1 / HEVC / H.264`
+- 同步录制音频
+- Windows 安装包、MSI、便携版打包
 
-## AI Disclosure
+后续计划加入：
 
-This fork is a vibe-coded experiment.
+- 推流 / 转推能力
+- 面向直播场景的输出链路
 
-To be explicit: the recorder-specific glue and integration code in this fork was produced through AI-assisted development rather than being hand-written line-by-line by a human. The upstream Moonlight codebase remains the original upstream project; this disclosure applies to the fork-specific recording work layered on top of it.
+## AI / Vibe Coding 声明
 
-## Upstream And License
+这个 fork 是一个明显带有 `vibe coding` 特征的实验项目。
 
-This project is a fork of:
+说得更直白一点：这个 fork 里“录制器相关的胶水层、集成层和不少新增逻辑”主要是通过 AI 辅助开发产出的，而不是由人类逐行手写完成。上游 Moonlight 自身的原始代码仍然归上游维护者和贡献者所有；这个说明主要针对本 fork 额外叠加出来的录制部分。
+
+如果你明确不想接触 AI 生成占比较高的项目，这个仓库大概率不适合你。这里把话提前说明白，就是为了避免浪费彼此时间。
+
+## 上游来源与许可证
+
+本项目直接基于以下上游项目演化而来：
 
 - [moonlight-stream/moonlight-qt](https://github.com/moonlight-stream/moonlight-qt)
 - [moonlight-stream/moonlight-common-c](https://github.com/moonlight-stream/moonlight-common-c)
 
-The repository keeps the upstream `GPL-3.0` licensing model. See [LICENSE](LICENSE).
+仓库继续沿用上游的 `GPL-3.0` 许可证体系，详见 [LICENSE](LICENSE)。
 
-Retaining upstream names, notices, and attributions inside the source tree is intentional. This project is not the official Moonlight release.
+源码树中保留上游的名称、版权声明、归属信息和历史痕迹是有意为之。本项目不是官方 Moonlight 发行版。
 
-## What This Fork Changes
+## 这个 Fork 改了什么
 
-MoonlightRecorder changes the behavior of Moonlight Qt from "stream and play" into "stream and record".
+`MoonlightRecorder` 的核心思路，是把 Moonlight Qt 从“串流并播放”改造成“串流并录制”。
 
-In practical terms, the current fork:
+目前这个 fork 主要做了这些事情：
 
-- bypasses local decode-and-playback for the recorder workflow
-- keeps Moonlight's packet recovery / reordering path
-- writes reordered source bitstreams into a recording pipeline
-- exposes recorder-centric settings in the GUI
-- builds Windows installer and portable packages under the `MoonlightRecorder` product name
+- 绕过录制路径中的本地解码与本地播放
+- 保留 Moonlight 的收包、纠错、重排序能力
+- 将重排序后的源视频码流送入录制封装链路
+- 将原始音频流一并写入录制结果
+- 把 GUI 改成更偏录像机而不是播放器的形态
+- 使用 `MoonlightRecorder` 这个产品名来构建 Windows 安装包与便携包
 
-### Windows Build Requirements
+## Windows 构建说明
 
-- Qt 6.7 SDK or later
+当前实测通过的 Windows 工具链是：
+
+- `Qt 6.8.3`
+- `MSVC 2022 64-bit`
+- `Visual Studio 2022 Build Tools`
+- `Windows 10/11 SDK`
+
+构建脚本已经改成默认把产物输出到：
+
+- `C:\Users\Administrator\Desktop\MoonlightRecorder-build`
+
+不会再把一堆构建结果直接塞进仓库根目录。
+
+### Windows 构建依赖
+
+- Qt 6.7 或更高版本
 - [Visual Studio 2022](https://visualstudio.microsoft.com/downloads/)
-- Select `MSVC` during Qt installation
-- [7-Zip](https://www.7-zip.org/) only if you want to customize packaging beyond the current scripts
-- Graphics Tools only if running debug builds
+- 安装 Qt 时选择 `MSVC`
+- 如果你要继续自定义安装包，可选装 [7-Zip](https://www.7-zip.org/)
+- 如果要跑 debug 图形调试，可选安装 Graphics Tools
 
-### Windows Build Steps
+### Windows 构建步骤
 
-1. Open a Visual Studio Developer Command Prompt or otherwise ensure the MSVC toolchain is available.
-2. Run:
+1. 打开 Visual Studio Developer Command Prompt，或者确保本机已经有可用的 MSVC 构建环境。
+2. 在仓库根目录运行：
 
 ```bat
 qmake moonlight-qt.pro
 jom release
 ```
 
-3. For packaged Windows builds, from the repository root run:
+3. 如果需要打包 Windows 发行产物，继续运行：
 
 ```bat
 scripts\build-arch.bat release
 scripts\generate-bundle.bat release
 ```
 
-The current scripts emit artifacts under the external desktop build root by default.
+默认情况下，这些脚本会把产物输出到桌面外置构建目录。
 
-## Current Windows Artifacts
+## 当前 Windows 产物
 
-The packaging flow currently produces:
+当前打包链会生成：
 
 - `MoonlightRecorderSetup-<version>.exe`
 - `MoonlightRecorder.msi`
 - `MoonlightRecorderPortable-x64-<version>.zip`
 
-## Credits
+## 致谢
 
-All credit for the original streaming client architecture belongs to the Moonlight upstream maintainers and contributors.
+原始串流客户端架构和大部分基础能力，功劳都属于 Moonlight 上游维护者和贡献者。
 
-Additional thanks to:
+另外也要感谢：
 
-- [Sunshine](https://github.com/LizardByte/Sunshine) for the host-side streaming stack used for testing
-- the original Moonlight Qt and Moonlight Common C contributors
+- [Sunshine](https://github.com/LizardByte/Sunshine)，本项目测试时使用的主机端串流实现
+- Moonlight Qt 与 Moonlight Common C 的原始贡献者们
 
-## Contributing
+## 贡献说明
 
-If you want to contribute, please treat this repository as an experimental fork rather than the official upstream project.
+如果你想参与贡献，请把这个仓库视为一个实验性 fork，而不是官方上游仓库。
 
-For official Moonlight development, issues, and upstream contributions, see:
+如果你想参与官方 Moonlight 的开发、提 issue 或提交 PR，请前往：
 
 - [moonlight-stream/moonlight-qt](https://github.com/moonlight-stream/moonlight-qt)
