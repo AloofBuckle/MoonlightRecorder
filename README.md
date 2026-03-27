@@ -24,8 +24,6 @@ This fork is a vibe-coded experiment.
 
 To be explicit: the recorder-specific glue and integration code in this fork was produced through AI-assisted development rather than being hand-written line-by-line by a human. The upstream Moonlight codebase remains the original upstream project; this disclosure applies to the fork-specific recording work layered on top of it.
 
-If you prefer to avoid AI-generated or AI-heavy projects, this repository is probably not a good fit for you, and this note is here so you do not waste your time.
-
 ## Upstream And License
 
 This project is a fork of:
